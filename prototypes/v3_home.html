@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>신뢰형 문서 검토 시스템</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root{
+      --bg:#f6f7fb;
+      --surface:#ffffff;
+      --surface2:#fbfbfd;
+      --text:#0f172a;
+      --muted:#64748b;
+      --line:#e7eaf1;
+      --primary:#2563eb;
+      --primary-soft: rgba(37,99,235,.10);
+      --ok:#16a34a;
+      --warn:#d97706;
+      --bad:#dc2626;
+      --radius:16px;
+      --shadow: 0 14px 40px rgba(15,23,42,.08);
+      --shadow-sm: 0 8px 20px rgba(15,23,42,.08);
+      --ring: 0 0 0 4px rgba(37,99,235,.14);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Noto Sans KR", Arial, "Apple SD Gothic Neo", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .wrap{min-height:100%; display:flex; flex-direction:column}
+    .container{max-width:1160px; width:100%; margin:0 auto; padding:22px 18px 44px;}
+
+    .topbar{
+      position: sticky; top:0; z-index:10;
+      background: rgba(246,247,251,.85);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(231,234,241,.9);
+    }
+    .topbar-inner{
+      max-width:1160px; margin:0 auto;
+      padding:14px 18px;
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+    }
+    .brand{display:flex; align-items:center; gap:10px; min-width:280px;}
+    .mark{
+      width:36px; height:36px; border-radius:12px;
+      background: linear-gradient(135deg, rgba(37,99,235,1), rgba(99,102,241,1));
+      box-shadow: 0 14px 36px rgba(37,99,235,.18);
+    }
+    .brand-title{display:flex; flex-direction:column; gap:2px; line-height:1.1}
+    .brand-title strong{font-size:13px; font-weight:950}
+    .brand-title span{font-size:12px; color:var(--muted); font-weight:650}
+
+    .tabs{
+      display:flex; align-items:center; gap:8px;
+      background: var(--surface);
+      border:1px solid var(--line);
+      padding:6px;
+      border-radius:999px;
+      box-shadow: var(--shadow-sm);
+    }
+    .tab{
+      font-size:12px; padding:10px 12px; border-radius:999px;
+      color: var(--muted); cursor:pointer; user-select:none;
+      border:1px solid transparent; font-weight:850;
+    }
+    .tab.active{
+      color: var(--text);
+      background: var(--primary-soft);
+      border-color: rgba(37,99,235,.18);
+    }
+
+    .btn{
+      border: 1px solid var(--line);
+      background: var(--surface);
+      color: var(--text);
+      padding: 11px 14px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-size:13px;
+      font-weight:900;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      transition: transform .05s ease, box-shadow .12s ease, border-color .12s ease, background .12s ease;
+    }
+    .btn:hover{ box-shadow: 0 12px 26px rgba(15,23,42,.10); border-color: rgba(15,23,42,.10) }
+    .btn:active{ transform: translateY(1px) }
+    .btn.primary{
+      background: var(--primary);
+      border-color: rgba(37,99,235,.35);
+      color:#fff;
+      box-shadow: 0 18px 40px rgba(37,99,235,.18);
+    }
+    .btn[disabled]{opacity:.55; cursor:not-allowed; box-shadow:none}
+
+    .card{
+      background: var(--surface);
+      border:1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card-header{
+      padding:16px 18px;
+      border-bottom:1px solid var(--line);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      background: linear-gradient(180deg, var(--surface), var(--surface2));
+    }
+    .card-header h2{margin:0; font-size:14px; font-weight:950;}
+    .card-body{padding:18px}
+    .grid{display:grid; grid-template-columns: 1.05fr .95fr; gap:14px;}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      font-size:11px; font-weight:950;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid var(--line);
+      background: var(--surface);
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .dot{width:8px; height:8px; border-radius:999px; background: var(--muted)}
+    .pill.ok{color:var(--ok); border-color: rgba(22,163,74,.22); background: rgba(22,163,74,.06)}
+    .pill.ok .dot{background:var(--ok)}
+    .pill.warn{color:var(--warn); border-color: rgba(217,119,6,.22); background: rgba(217,119,6,.06)}
+    .pill.warn .dot{background:var(--warn)}
+    .pill.bad{color:var(--bad); border-color: rgba(220,38,38,.22); background: rgba(220,38,38,.06)}
+    .pill.bad .dot{background:var(--bad)}
+
+    .kvs{display:grid; grid-template-columns: 1fr 1fr; gap:10px}
+    @media (max-width: 560px){ .kvs{grid-template-columns:1fr} }
+    .kv{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding:12px;
+      background: var(--surface);
+    }
+    .k{font-size:12px; color:var(--muted); font-weight:800}
+    .v{margin-top:6px; font-size:16px; font-weight:980;}
+
+    .box{
+      border:1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: var(--surface);
+      line-height:1.65;
+      font-size:13px;
+      white-space:pre-wrap;
+      min-height: 120px;
+    }
+
+    /* HERO + UPLOAD integrated */
+    .hero{
+      border-radius: var(--radius);
+      overflow:hidden;
+      border: 1px solid var(--line);
+      background:
+        radial-gradient(900px 520px at 12% 12%, rgba(37,99,235,.14), transparent 55%),
+        radial-gradient(820px 540px at 88% 0%, rgba(99,102,241,.12), transparent 60%),
+        var(--surface);
+      box-shadow: var(--shadow);
+      padding: 22px;
+    }
+    .hero-top{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+    .hero-title{display:flex; flex-direction:column; gap:8px; max-width: 76ch;}
+    .hero-title h1{margin:0; font-size:28px; font-weight:980; letter-spacing:-.9px; line-height:1.1;}
+    .hero-title p{margin:0; color: var(--muted); font-size:13px; font-weight:700; line-height:1.6;}
+    .hero-actions{display:flex; gap:10px; flex-wrap:wrap; align-items:center;}
+
+    .dropzone{
+      border:1px dashed rgba(100,116,139,.40);
+      border-radius: 16px;
+      padding:16px;
+      min-height: 170px;
+      background: var(--surface);
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      justify-content:center;
+      transition: border-color .12s ease, box-shadow .12s ease, background .12s ease;
+    }
+    .dropzone.drag{
+      border-color: rgba(37,99,235,.65);
+      background: rgba(37,99,235,.04);
+      box-shadow: var(--ring);
+    }
+    .row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
+    .file-input,.select{
+      border:1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: var(--surface);
+      font-size:13px;
+      font-weight:900;
+      color: var(--text);
+      width: min(420px, 100%);
+    }
+    .select{ width:min(220px,100%); }
+
+    .progress{
+      height:10px;
+      background: #eef2ff;
+      border-radius:999px;
+      overflow:hidden;
+      border: 1px solid rgba(37,99,235,.15);
+      margin-top:10px;
+    }
+    .progress > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(37,99,235,1), rgba(99,102,241,1));
+      border-radius:999px;
+      transition: width .35s ease;
+    }
+
+    .hidden{display:none !important}
+
+    /* overlay */
+    .progress-overlay{
+      position: fixed; inset: 0;
+      background: rgba(15,23,42,.35);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .progress-overlay.on{ display:flex; }
+    .progress-card{
+      width: min(520px, calc(100% - 28px));
+      background: #fff;
+      border: 1px solid #e7eaf1;
+      border-radius: 18px;
+      box-shadow: 0 18px 60px rgba(15,23,42,.18);
+      padding: 18px;
+    }
+    .progress-head{display:flex; align-items:center; gap:12px;}
+    .spinner{
+      width: 28px; height: 28px;
+      border-radius: 999px;
+      border: 3px solid rgba(37,99,235,.18);
+      border-top-color: rgba(37,99,235,1);
+      animation: spin 0.9s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-title strong{font-size: 13px; font-weight: 950;}
+    .progress-title span{font-size: 12px; color: #64748b; font-weight: 700;}
+    .steps{ margin-top: 14px; display:flex; flex-direction:column; gap:10px; }
+    .step{
+      display:flex; align-items:center; justify-content: space-between; gap:10px;
+      padding: 10px 12px; border: 1px solid #e7eaf1; border-radius: 14px; background: #fff;
+    }
+    .badge{
+      font-size: 11px; font-weight: 950;
+      padding: 7px 10px; border-radius: 999px;
+      border: 1px solid #e7eaf1; color:#64748b; background:#fff;
+    }
+    .badge.active{color:#2563eb; border-color: rgba(37,99,235,.20); background: rgba(37,99,235,.10);}
+    .badge.done{color:#16a34a; border-color: rgba(22,163,74,.22); background: rgba(22,163,74,.06);}
+
+    /* modal */
+    .modal{
+      position: fixed; inset:0;
+      background: rgba(15,23,42,.45);
+      backdrop-filter: blur(6px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 10000;
+    }
+    .modal.on{ display:flex; }
+    .modal-card{
+      width: min(560px, calc(100% - 28px));
+      background:#fff; border:1px solid #e7eaf1; border-radius: 18px;
+      box-shadow: 0 22px 70px rgba(15,23,42,.22);
+      overflow:hidden;
+    }
+    .modal-head{
+      padding:14px 16px; border-bottom:1px solid #e7eaf1;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      background: linear-gradient(180deg, #fff, #fbfbfd);
+    }
+    .modal-head strong{ font-size: 13px; font-weight: 950; }
+    .modal-body{ padding: 16px; }
+    .modal-body pre{
+      margin:0; white-space: pre-wrap; word-break: break-word;
+      font-size: 12px; line-height:1.55; color:#334155;
+      background: #f8fafc; border: 1px solid #e7eaf1; border-radius: 14px; padding: 12px;
+    }
+    .modal-actions{
+      padding: 14px 16px; border-top:1px solid #e7eaf1;
+      display:flex; justify-content:flex-end; gap:10px;
+    }
+
+    /* result panels */
+    .panel{
+      border:1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px;
+      background: var(--surface);
+    }
+    .panel h3{
+      margin:0 0 10px;
+      font-size:12px;
+      font-weight:980;
+      color: var(--muted);
+    }
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      font-size:12px;
+    }
+    .table th,.table td{
+      border-bottom:1px solid var(--line);
+      padding:10px 8px;
+      text-align:left;
+      vertical-align:top;
+    }
+    .table th{color:var(--muted); font-weight:900}
+
+    .barrow{display:flex; flex-direction:column; gap:6px; padding:10px 0; border-bottom:1px solid var(--line);}
+    .barrow:last-child{border-bottom:none}
+    .barhead{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .barlabel{font-size:12px; color:var(--muted); font-weight:900}
+    .barnum{font-size:12px; font-weight:950}
+    .bar{
+      height:10px; border-radius:999px;
+      background:#eef2ff; border:1px solid rgba(37,99,235,.15);
+      overflow:hidden;
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(37,99,235,1), rgba(99,102,241,1));
+    }
+    .reason{
+      font-size:12px; color:#334155; font-weight:650; line-height:1.55;
+    }
+
+    .note{
+      font-size:12px; color:var(--muted); font-weight:700; line-height:1.6;
+    }
+
+    canvas{max-width:100%;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="mark"></div>
+        <div class="brand-title">
+          <strong id="brandName">신뢰형 문서 검토 시스템</strong>
+          <span>문서 검토 • 기준선 중심 • 감사 가능</span>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <div class="tab" data-nav="#/start">검토 시작</div>
+        <div class="tab" data-nav="#/result">검토 결과</div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- START (개요+업로드 통합) -->
+    <section id="view-start" class="hidden">
+      <div class="hero">
+        <div class="hero-top">
+          <div class="hero-title">
+            <h1 id="systemName">신뢰형 문서 검토 시스템</h1>
+            
+          </div>
+          <div class="hero-actions">
+            <button class="btn" id="clearBtn" disabled>초기화</button>
+            <button class="btn primary" id="runBtn" disabled>검토 실행</button>
+          </div>
+        </div>
+
+        <div style="height:14px"></div>
+
+        <div class="grid">
+          <div>
+            <div id="dropzone" class="dropzone" tabindex="0">
+              <div class="row">
+                <input id="fileInput" class="file-input" type="file" />
+                <select id="docType" class="select">
+                  <option value="이력서">이력서</option>
+                  <option value="계약서">계약서</option>
+                  <option value="보고서">보고서</option>
+                  <option value="기타">기타</option>
+                </select>
+                <select id="jobRole" class="select">
+                  <option value="개발">개발</option>
+                  <option value="인사">인사</option>
+                  <option value="마케팅">마케팅</option>
+                </select>
+              </div>
+              <div class="note">파일 업로드 후 <b>검토 실행</b>을 누르시면, 단계별 검토가 진행됩니다.</div>
+            </div>
+          </div>
+
+          <aside class="panel">
+            <h3>상태</h3>
+            <div class="kvs">
+              <div class="kv">
+                <div class="k">서버</div>
+                <div class="v" id="kvServer">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">파일</div>
+                <div class="v" id="kvFile">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">문서 유형</div>
+                <div class="v" id="kvDocType">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">직무 기준</div>
+                <div class="v" id="kvRole">-</div>
+              </div>
+            </div>
+            <div class="progress"><div id="progressBar"></div></div>
+            <div style="margin-top:10px; display:flex; gap:8px; flex-wrap:wrap;">
+              <span class="pill"><span class="dot"></span>기준선</span>
+              <span class="pill"><span class="dot"></span>신뢰성 게이트</span>
+              <span class="pill"><span class="dot"></span>PDF 결과지</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="view-result" class="card hidden">
+      <div class="card-header">
+        <h2>검토 결과</h2>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <button class="btn" id="backStart">새 검토</button>
+          <button class="btn" id="downloadPdf" disabled>PDF 결과지 다운로드</button>
+          <button class="btn primary" id="copyJson" disabled>결과 JSON 복사</button>
+        </div>
+      </div>
+
+      <div class="card-body grid">
+        <!-- LEFT -->
+        <div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div>
+              <div class="k" style="font-weight:900;">판정</div>
+              <div class="v" id="rDecision">-</div>
+            </div>
+            <span class="pill" id="rStatus"><span class="dot"></span><span id="rStatusText">-</span></span>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="kvs">
+            <div class="kv">
+              <div class="k">신뢰도</div>
+              <div class="v" id="rConf">-</div>
+            </div>
+            <div class="kv">
+              <div class="k">정책</div>
+              <div class="v" id="rPolicy">-</div>
+            </div>
+            <div class="kv">
+              <div class="k">엔진</div>
+              <div class="v" id="rModel">-</div>
+            </div>
+            <div class="kv">
+              <div class="k">검토 시각</div>
+              <div class="v" id="rTime">-</div>
+            </div>
+          </div>
+
+          <div style="height:12px"></div>
+          <div class="box" id="rFindings">-</div>
+
+          <div style="height:12px"></div>
+
+          <!-- ★ 여기(좌측 하단)에 신뢰성 지표를 올림 -->
+          <div class="panel" id="relCard">
+            <h3>신뢰성 지표</h3>
+            <div id="relBars"></div>
+            <div class="note"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div>
+          <div class="panel">
+            <h3>서류 평가</h3>
+            <canvas id="radar" width="420" height="360"></canvas>
+            <div class="note" id="baselineNote" style="margin-top:8px;">-</div>
+          </div>
+
+          <div style="height:12px"></div>
+
+          <div class="panel">
+            <h3>평가 항목(점수)</h3>
+            <table class="table" id="axesTable">
+              <thead><tr><th>항목</th><th style="width:90px">점수</th><th>근거</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- 진행 오버레이 -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-card">
+    <div class="progress-head">
+      <div class="spinner"></div>
+      <div class="progress-title">
+        <strong id="progressMain">검토를 진행하고 있습니다</strong><br/>
+        <span id="progressSub">잠시만 기다려 주세요.</span>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div><b>1) 파일 업로드</b><div class="note">문서를 서버로 전송합니다</div></div>
+        <span class="badge" id="stUpload">대기</span>
+      </div>
+      <div class="step">
+        <div><b>2) 문서 추출</b><div class="note">문서에서 텍스트를 추출합니다</div></div>
+        <span class="badge" id="stExtract">대기</span>
+      </div>
+      <div class="step">
+        <div><b>3) 평가/게이트</b><div class="note">기준선·신뢰성 게이트를 적용합니다</div></div>
+        <span class="badge" id="stAI">대기</span>
+      </div>
+      <div class="step">
+        <div><b>4) 리포트 준비</b><div class="note">PDF 결과지 생성을 준비합니다</div></div>
+        <span class="badge" id="stReport">대기</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 오류 모달 -->
+<div class="modal" id="errorModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <strong>오류가 발생했습니다</strong>
+      <button class="btn" id="errCloseTop">닫기</button>
+    </div>
+    <div class="modal-body">
+      <pre id="errText">-</pre>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="errClose">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== 설정 =====
+  const SYSTEM_NAME = "신뢰형 문서 검토 시스템";
+  const API_BASE    = "http://127.0.0.1:3000";
+
+  // Router
+  const views = {
+    start: document.getElementById('view-start'),
+    result: document.getElementById('view-result'),
+  };
+  function setActiveTab(hash){
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.nav === hash));
+  }
+  function showView(name){
+    Object.values(views).forEach(v => v.classList.add('hidden'));
+    views[name].classList.remove('hidden');
+    setActiveTab(`#/` + name);
+  }
+  function route(){
+    const hash = location.hash || '#/start';
+    const page = hash.replace('#/','');
+    if(!views[page]) { location.hash = '#/start'; return; }
+    showView(page);
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => location.hash = t.dataset.nav));
+  window.addEventListener('hashchange', route);
+
+  document.getElementById('brandName').textContent = SYSTEM_NAME;
+  document.getElementById('systemName').textContent = SYSTEM_NAME;
+
+  // Upload
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const docTypeSel = document.getElementById('docType');
+  const jobRoleSel = document.getElementById('jobRole');
+  const runBtn = document.getElementById('runBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const progressBar = document.getElementById('progressBar');
+
+  const kvServer = document.getElementById('kvServer');
+  const kvFile = document.getElementById('kvFile');
+  const kvDocType = document.getElementById('kvDocType');
+  const kvRole = document.getElementById('kvRole');
+
+  let selectedFile = null;
+  let lastResult = null;
+
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  async function ping(){
+    try{
+      const r = await fetch(`${API_BASE}/health`);
+      kvServer.textContent = r.ok ? "정상" : "비정상";
+    } catch {
+      kvServer.textContent = "연결 실패";
+    }
+  }
+
+  function setFile(file){
+    selectedFile = file;
+    if(!file){
+      runBtn.disabled = true;
+      clearBtn.disabled = true;
+      kvFile.textContent = "-";
+      return;
+    }
+    kvFile.textContent = file.name;
+    kvDocType.textContent = docTypeSel.value;
+    kvRole.textContent = jobRoleSel.value;
+    runBtn.disabled = false;
+    clearBtn.disabled = false;
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(f) setFile(f);
+  });
+  docTypeSel.addEventListener('change', () => kvDocType.textContent = docTypeSel.value);
+  jobRoleSel.addEventListener('change', () => kvRole.textContent = jobRoleSel.value);
+
+  clearBtn.addEventListener('click', () => {
+    selectedFile = null;
+    fileInput.value = '';
+    setFile(null);
+    progressBar.style.width = '0%';
+  });
+
+  // DnD
+  ['dragenter','dragover'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.add('drag');
+    });
+  });
+  ['dragleave','drop'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.remove('drag');
+    });
+  });
+  dropzone.addEventListener('drop', (e) => {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) setFile(f);
+  });
+
+  // Overlay / Modal
+  const overlay = document.getElementById('progressOverlay');
+  const stUpload = document.getElementById('stUpload');
+  const stExtract = document.getElementById('stExtract');
+  const stAI = document.getElementById('stAI');
+  const stReport = document.getElementById('stReport');
+  const progressSub = document.getElementById('progressSub');
+
+  const errorModal = document.getElementById('errorModal');
+  const errText = document.getElementById('errText');
+  function showError(msg){
+    errText.textContent = msg || "알 수 없는 오류";
+    errorModal.classList.add('on');
+  }
+  function hideError(){ errorModal.classList.remove('on'); }
+  document.getElementById('errClose').addEventListener('click', hideError);
+  document.getElementById('errCloseTop').addEventListener('click', hideError);
+  errorModal.addEventListener('click', (e)=>{ if(e.target === errorModal) hideError(); });
+
+  function resetStages(){
+    [stUpload, stExtract, stAI, stReport].forEach(b=>{
+      b.classList.remove('active','done');
+      b.textContent = "대기";
+    });
+  }
+  function setStage(el, state){
+    el.classList.remove('active','done');
+    if(state === 'active'){ el.classList.add('active'); el.textContent = "진행 중"; }
+    if(state === 'done'){ el.classList.add('done'); el.textContent = "완료"; }
+  }
+  function showProgress(){
+    resetStages();
+    overlay.classList.add('on');
+  }
+  function hideProgress(){ overlay.classList.remove('on'); }
+
+  // ===== 서버 호출 =====
+  async function analyzeFile(file, docType, jobRole){
+    const form = new FormData();
+    form.append('file', file);
+    form.append('doc_type', docType);
+    form.append('job_role', jobRole);
+
+    const res = await fetch(`${API_BASE}/api/review`, { method:'POST', body: form });
+    const ct = res.headers.get('content-type') || '';
+    const txt = await res.text();
+    if(!res.ok) throw new Error(txt || `HTTP ${res.status}`);
+    if(!ct.includes('application/json')) throw new Error('서버 응답이 JSON이 아닙니다:\n' + txt);
+
+    const data = JSON.parse(txt);
+    if(!data.meta || !data.result || !data.scoring) throw new Error('서버 응답 형식(meta/result/scoring)이 올바르지 않습니다.\n' + txt);
+    return data;
+  }
+
+  async function postPdf(payload){
+    const form = new FormData();
+    form.append('payload_json', JSON.stringify(payload));
+    const res = await fetch(`${API_BASE}/api/report/pdf`, { method:'POST', body: form });
+    if(!res.ok) throw new Error(await res.text());
+    return await res.blob();
+  }
+
+  
+  async function fakeProgressLong(){
+    const total = 2000 + Math.floor(Math.random()*2000);
+    const t0 = performance.now();
+
+    progressBar.style.width = '5%';
+    await sleep(150);
+
+    while(performance.now() - t0 < total * 0.35){
+      const p = 5 + ((performance.now()-t0)/(total*0.35))*30;
+      progressBar.style.width = `${Math.min(35, p)}%`;
+      await sleep(120);
+    }
+    while(performance.now() - t0 < total * 0.80){
+      const p = 35 + ((performance.now()-t0 - total*0.35)/(total*0.45))*45;
+      progressBar.style.width = `${Math.min(80, p)}%`;
+      await sleep(140);
+    }
+    progressBar.style.width = '95%';
+    await sleep(250);
+  }
+
+  // ===== 결과 렌더링 =====
+  const rDecision = document.getElementById('rDecision');
+  const rConf = document.getElementById('rConf');
+  const rPolicy = document.getElementById('rPolicy');
+  const rModel = document.getElementById('rModel');
+  const rTime = document.getElementById('rTime');
+  const rFindings = document.getElementById('rFindings');
+  const rStatus = document.getElementById('rStatus');
+  const rStatusText = document.getElementById('rStatusText');
+
+  function setStatusPill(st){
+    rStatus.classList.remove('ok','warn','bad');
+    if(st === 'ok'){ rStatus.classList.add('ok'); rStatusText.textContent = '정상'; return; }
+    if(st === 'warn'){ rStatus.classList.add('warn'); rStatusText.textContent = '검토 필요'; return; }
+    rStatus.classList.add('bad'); rStatusText.textContent = '주의';
+  }
+
+  // Radar (Canvas)
+  const radarCanvas = document.getElementById('radar');
+  const rctx = radarCanvas.getContext('2d');
+
+  function drawRadar(labels, applicantVals, avgVals, baseline=60, max=100){
+    const w = radarCanvas.width, h = radarCanvas.height;
+    rctx.clearRect(0,0,w,h);
+
+    const cx = w*0.50, cy = h*0.52;
+    const R = Math.min(w,h)*0.33;
+    const n = labels.length;
+
+    // grid
+    rctx.strokeStyle = "rgba(100,116,139,0.25)";
+    rctx.lineWidth = 1;
+    const levels = [20,40,60,80,100];
+    for(let lvl of levels){
+      const r = R*(lvl/max);
+      rctx.beginPath();
+      for(let i=0;i<n;i++){
+        const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+        const x = cx + r*Math.cos(ang);
+        const y = cy + r*Math.sin(ang);
+        if(i===0) rctx.moveTo(x,y); else rctx.lineTo(x,y);
+      }
+      rctx.closePath();
+      rctx.stroke();
+    }
+
+    // axes
+    for(let i=0;i<n;i++){
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      rctx.beginPath();
+      rctx.moveTo(cx,cy);
+      rctx.lineTo(cx + R*Math.cos(ang), cy + R*Math.sin(ang));
+      rctx.stroke();
+    }
+
+    // baseline dashed (60)
+    const br = R*(baseline/max);
+    rctx.setLineDash([6,4]);
+    rctx.strokeStyle = "rgba(100,116,139,0.55)";
+    rctx.lineWidth = 2;
+    rctx.beginPath();
+    for(let i=0;i<n;i++){
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      const x = cx + br*Math.cos(ang);
+      const y = cy + br*Math.sin(ang);
+      if(i===0) rctx.moveTo(x,y); else rctx.lineTo(x,y);
+    }
+    rctx.closePath();
+    rctx.stroke();
+    rctx.setLineDash([]);
+
+    // avg polygon (dashed)
+    rctx.setLineDash([6,4]);
+    rctx.strokeStyle = "rgba(100,116,139,0.80)";
+    rctx.lineWidth = 2;
+    rctx.beginPath();
+    for(let i=0;i<n;i++){
+      const v = Math.max(0, Math.min(max, avgVals[i]));
+      const r = R*(v/max);
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      const x = cx + r*Math.cos(ang);
+      const y = cy + r*Math.sin(ang);
+      if(i===0) rctx.moveTo(x,y); else rctx.lineTo(x,y);
+    }
+    rctx.closePath();
+    rctx.stroke();
+    rctx.setLineDash([]);
+
+    // applicant polygon
+    rctx.strokeStyle = "rgba(37,99,235,1)";
+    rctx.lineWidth = 2;
+    rctx.fillStyle = "rgba(37,99,235,0.12)";
+    rctx.beginPath();
+    for(let i=0;i<n;i++){
+      const v = Math.max(0, Math.min(max, applicantVals[i]));
+      const r = R*(v/max);
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      const x = cx + r*Math.cos(ang);
+      const y = cy + r*Math.sin(ang);
+      if(i===0) rctx.moveTo(x,y); else rctx.lineTo(x,y);
+    }
+    rctx.closePath();
+    rctx.fill();
+    rctx.stroke();
+
+    // labels
+    rctx.fillStyle = "rgba(15,23,42,0.85)";
+    rctx.font = "12px 'Noto Sans KR', system-ui";
+    for(let i=0;i<n;i++){
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      const x = cx + (R+28)*Math.cos(ang);
+      const y = cy + (R+28)*Math.sin(ang);
+      rctx.textAlign = "center";
+      rctx.textBaseline = "middle";
+      rctx.fillText(labels[i], x, y);
+    }
+
+    // legend
+    rctx.font = "12px 'Noto Sans KR', system-ui";
+    rctx.fillStyle = "rgba(37,99,235,1)";
+    rctx.fillText("■ 지원자", 18, 18);
+    rctx.fillStyle = "rgba(100,116,139,0.9)";
+    rctx.fillText("■ 전체 평균", 88, 18);
+  }
+
+  function renderTables(payload){
+    const scoring = payload.scoring || {};
+    const axes = scoring.axesScore || {};
+    const rel  = scoring.reliabilityScore || {};
+    const axisReasons = scoring.axisReasons || {};
+    const relReasons  = scoring.reliabilityReasons || {};
+    const baseline = scoring.baselineScore || 60;
+    const bench = scoring.benchmark || {};
+    const axesAvg = (bench.axesAvgScore || {});
+    // 레이더 라벨
+    const labelsShort = ["직무적합성","조직적응성","문제해결","실행력","성과근거","문서완성도"];
+    const keys = ["직무적합성","조직적응성","문제해결 역량","업무 실행력","성과 근거력","문서 완성도"];
+
+    const applicantVals = keys.map(k => Number(axes[k] ?? 0));
+    const avgVals = keys.map(k => Number(axesAvg[k] ?? 0));
+
+    drawRadar(labelsShort, applicantVals, avgVals, baseline, 100);
+
+    // axes table
+    const tbody = document.querySelector("#axesTable tbody");
+    tbody.innerHTML = "";
+    keys.forEach(k=>{
+      const tr = document.createElement("tr");
+      const td1 = document.createElement("td"); td1.textContent = k;
+      const td2 = document.createElement("td"); td2.textContent = `${Number(axes[k] ?? 0).toFixed(1)}점`;
+      const td3 = document.createElement("td"); td3.textContent = axisReasons[k] || "-";
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+      tbody.appendChild(tr);
+    });
+
+    // reliability bars (LEFT)
+    const relWrap = document.getElementById("relBars");
+    relWrap.innerHTML = "";
+    const relItems = ["형식 강건성","키워드 민감도","평가 일관성","편향 관련 신뢰성"];
+    relItems.forEach(k=>{
+      const score = Number(rel[k] ?? 0);
+      const reason = relReasons[k] || "-";
+      const row = document.createElement("div");
+      row.className = "barrow";
+      row.innerHTML = `
+        <div class="barhead">
+          <div class="barlabel">${k}</div>
+          <div class="barnum">${score.toFixed(1)}점</div>
+        </div>
+        <div class="bar"><div style="width:${Math.max(0,Math.min(100,score))}%;"></div></div>
+        <div class="reason">${reason}</div>
+      `;
+      relWrap.appendChild(row);
+    });
+  }
+
+  function renderResult(payload){
+    lastResult = payload;
+
+    const meta = payload.meta || {};
+    const r = payload.result || {};
+
+    rDecision.textContent = r.decision ?? '-';
+    rConf.textContent = (typeof r.confidence === 'number') ? `${Math.round(r.confidence*100)}%` : '-';
+    rPolicy.textContent = meta.policy ?? '-';
+    rModel.textContent = meta.model ?? '-';
+    rTime.textContent = meta.analyzedAt ? new Date(meta.analyzedAt).toLocaleString('ko-KR') : '-';
+
+    rFindings.textContent = r.findings ?? '-';
+    setStatusPill(r.status || 'warn');
+
+    renderTables(payload);
+
+    document.getElementById("copyJson").disabled = false;
+    document.getElementById("downloadPdf").disabled = false;
+  }
+
+  document.getElementById('copyJson').addEventListener('click', async () => {
+    if(!lastResult) return;
+    const text = JSON.stringify(lastResult, null, 2);
+    try{ await navigator.clipboard.writeText(text); }
+    catch { prompt('복사해서 사용하세요:', text); }
+  });
+
+  document.getElementById('downloadPdf').addEventListener('click', async () => {
+    if(!lastResult) return;
+    try{
+      const blob = await postPdf(lastResult);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `검토결과_${lastResult.meta?.caseId || "CASE"}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e){
+      showError((e && e.message) ? e.message : String(e));
+    }
+  });
+
+  document.getElementById('backStart').addEventListener('click', ()=> location.hash = '#/start');
+
+  // 실행
+  runBtn.addEventListener('click', async () => {
+    if(!selectedFile) return;
+
+    runBtn.disabled = true;
+    clearBtn.disabled = true;
+
+    showProgress();
+    setStage(stUpload,'active');
+    progressSub.textContent = "파일 업로드를 진행하고 있습니다.";
+
+    const t1 = setTimeout(()=>{ setStage(stUpload,'done'); setStage(stExtract,'active'); progressSub.textContent="문서에서 텍스트를 추출하고 있습니다."; }, 700);
+    const t2 = setTimeout(()=>{ setStage(stExtract,'done'); setStage(stAI,'active'); progressSub.textContent="기준선·신뢰성 게이트를 적용하고 있습니다."; }, 1400);
+    const t3 = setTimeout(()=>{ setStage(stAI,'done'); setStage(stReport,'active'); progressSub.textContent="리포트 생성을 준비하고 있습니다."; }, 2200);
+
+    try{
+      const longProgress = fakeProgressLong();
+      const payload = await analyzeFile(selectedFile, docTypeSel.value, jobRoleSel.value);
+      await longProgress;
+
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      setStage(stUpload,'done');
+      setStage(stExtract,'done');
+      setStage(stAI,'done');
+      setStage(stReport,'done');
+      progressBar.style.width = "100%";
+
+      renderResult(payload);
+      hideProgress();
+      location.hash = '#/result';
+
+    } catch (e){
+      hideProgress();
+      showError((e && e.message) ? e.message : String(e));
+    } finally {
+      runBtn.disabled = !selectedFile;
+      clearBtn.disabled = !selectedFile;
+    }
+  });
+
+  // init
+  route();
+  ping();
+  kvDocType.textContent = docTypeSel.value;
+  kvRole.textContent = jobRoleSel.value;
+</script>
+</body>
+</html>

@@ -1,0 +1,1131 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JHD 이력서 평가 시스템</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root{
+      --bg:#ffffff;
+      --surface:#ffffff;
+      --surface2:#f5f5f5;
+      --text:#000000;
+      --muted:#666666;
+      --line:#000000;
+      --primary:#000000;
+      --primary-soft: #f5f5f5;
+      --ok:#000000;
+      --warn:#666666;
+      --bad:#000000;
+      --radius:0;
+      --shadow: none;
+      --shadow-sm: none;
+      --ring: none;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-monospace, "Courier New", "Noto Sans KR", monospace;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .wrap{min-height:100%; display:flex; flex-direction:column}
+    .container{max-width:1160px; width:100%; margin:0 auto; padding:22px 18px 44px;}
+
+    .topbar{
+      position: sticky; top:0; z-index:10;
+      background: #000;
+      border-bottom: 4px solid #000;
+    }
+    .topbar-inner{
+      max-width:1160px; margin:0 auto;
+      padding:18px;
+      display:flex; align-items:center; justify-content:space-between; gap:14px;
+    }
+    .brand{display:flex; align-items:center; gap:12px; min-width:280px;}
+    .mark{
+      width:42px; height:42px; border-radius:0;
+      background: #fff;
+      border: 3px solid #000;
+    }
+    .brand-title{display:flex; flex-direction:column; gap:4px; line-height:1.1}
+    .brand-title strong{font-size:16px; font-weight:900; letter-spacing:0; color:#fff;}
+    .brand-title span{font-size:11px; color:#ccc; font-weight:700; text-transform:uppercase;}
+
+    .tabs{
+      display:flex; align-items:center; gap:0;
+      background: transparent;
+      border:3px solid #fff;
+      padding:0;
+      border-radius:0;
+      box-shadow: none;
+    }
+    .tab{
+      font-size:13px; padding:12px 18px; border-radius:0;
+      color: #fff; cursor:pointer; user-select:none;
+      border:none; font-weight:900;
+      transition: all .1s ease;
+      border-right: 3px solid #fff;
+      text-transform: uppercase;
+    }
+    .tab:last-child{border-right:none;}
+    .tab.active{
+      color: #000;
+      background: #fff;
+      border-color: #fff;
+    }
+
+    .btn{
+      border: 3px solid #000;
+      background: #fff;
+      color: #000;
+      padding: 14px 20px;
+      border-radius: 0;
+      cursor:pointer;
+      font-size:14px;
+      font-weight:900;
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      transition: transform .05s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .btn:hover{ 
+      background: #f5f5f5;
+      transform: translate(-2px, -2px);
+      box-shadow: 2px 2px 0 #000;
+    }
+    .btn:active{ 
+      transform: translate(0, 0);
+      box-shadow: none;
+    }
+    .btn.primary{
+      background: #000;
+      border-color: #000;
+      color:#fff;
+    }
+    .btn.primary:hover{
+      background: #333;
+      box-shadow: 2px 2px 0 #000;
+    }
+    .btn[disabled]{opacity:.4; cursor:not-allowed; box-shadow:none; transform:none;}
+
+    .card{
+      background: var(--surface);
+      border:4px solid #000;
+      border-radius: 0;
+      box-shadow: none;
+      overflow:visible;
+    }
+    .card-header{
+      padding:18px 20px;
+      border-bottom:4px solid #000;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      background: #000;
+      color: #fff;
+    }
+    .card-header h2{margin:0; font-size:18px; font-weight:900; text-transform:uppercase; letter-spacing:1px;}
+    .card-body{padding:20px}
+    .grid{display:grid; grid-template-columns: 1.05fr .95fr; gap:20px;}
+    @media (max-width: 980px){ .grid{grid-template-columns:1fr} }
+
+    .pill{
+      display:inline-flex; align-items:center; gap:10px;
+      font-size:12px; font-weight:900;
+      padding:8px 14px;
+      border-radius:0;
+      border:3px solid #000;
+      background: #fff;
+      color: #000;
+      white-space:nowrap;
+      text-transform:uppercase;
+    }
+    .dot{width:10px; height:10px; border-radius:0; background: #000; border:2px solid #000;}
+    .pill.ok{color:#000; border-color: #000; background: #fff}
+    .pill.ok .dot{background:#000}
+    .pill.warn{color:#666; border-color: #666; background: #fff}
+    .pill.warn .dot{background:#666; border-color:#666;}
+    .pill.bad{color:#000; border-color: #000; background: #f5f5f5}
+    .pill.bad .dot{background:#000}
+
+    .kvs{display:grid; grid-template-columns: 1fr 1fr; gap:12px}
+    @media (max-width: 560px){ .kvs{grid-template-columns:1fr} }
+    .kv{
+      border:3px solid #000;
+      border-radius: 0;
+      padding:14px;
+      background: #fff;
+    }
+    .k{font-size:11px; color:#666; font-weight:900; text-transform:uppercase; letter-spacing:0.5px;}
+    .v{margin-top:8px; font-size:20px; font-weight:900;}
+
+    .box{
+      border:3px solid #000;
+      border-radius: 0;
+      padding: 16px;
+      background: #fff;
+      line-height:1.7;
+      font-size:13px;
+      white-space:pre-wrap;
+      min-height: 120px;
+      font-family: ui-monospace, monospace;
+    }
+
+    /* HERO + UPLOAD integrated */
+    .hero{
+      border-radius: 0;
+      overflow:visible;
+      border: 4px solid #000;
+      background: #fff;
+      box-shadow: 8px 8px 0 #000;
+      padding: 26px;
+    }
+    .hero-top{display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap;}
+    .hero-title{display:flex; flex-direction:column; gap:10px; max-width: 76ch;}
+    .hero-title h1{margin:0; font-size:38px; font-weight:900; letter-spacing:-1px; line-height:1; text-transform:uppercase;}
+    .hero-title p{margin:0; color: #666; font-size:13px; font-weight:700; line-height:1.6; text-transform:uppercase; letter-spacing:0.5px;}
+    .hero-actions{display:flex; gap:12px; flex-wrap:wrap; align-items:center;}
+
+    .dropzone{
+      border:3px dashed #000;
+      border-radius: 0;
+      padding:20px;
+      min-height: 180px;
+      background: #fff;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      justify-content:center;
+      transition: background .1s ease;
+    }
+    .dropzone.drag{
+      background: #f5f5f5;
+      border-style: solid;
+    }
+    .row{display:flex; gap:12px; flex-wrap:wrap; align-items:center}
+    .file-input,.select{
+      border:3px solid #000;
+      border-radius: 0;
+      padding: 12px 14px;
+      background: #fff;
+      font-size:13px;
+      font-weight:900;
+      color: #000;
+      width: min(420px, 100%);
+      font-family: ui-monospace, monospace;
+    }
+    .select{ width:min(220px,100%); }
+
+    .progress{
+      height:14px;
+      background: #fff;
+      border-radius:0;
+      overflow:hidden;
+      border: 3px solid #000;
+      margin-top:12px;
+    }
+    .progress > div{
+      height:100%;
+      width:0%;
+      background: #000;
+      border-radius:0;
+      transition: width .35s ease;
+    }
+
+    .hidden{display:none !important}
+
+    /* overlay */
+    .progress-overlay{
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: none;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+    }
+    .progress-overlay.on{ display:flex; }
+    .progress-card{
+      width: min(520px, calc(100% - 28px));
+      background: #fff;
+      border: 4px solid #000;
+      border-radius: 0;
+      box-shadow: 8px 8px 0 #fff;
+      padding: 22px;
+    }
+    .progress-head{display:flex; align-items:center; gap:14px;}
+    .spinner{
+      width: 32px; height: 32px;
+      border-radius: 0;
+      border: 4px solid #f5f5f5;
+      border-top-color: #000;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-title strong{font-size: 15px; font-weight: 900; text-transform:uppercase;}
+    .progress-title span{font-size: 12px; color: #666; font-weight: 700;}
+    .steps{ margin-top: 16px; display:flex; flex-direction:column; gap:12px; }
+    .step{
+      display:flex; align-items:center; justify-content: space-between; gap:10px;
+      padding: 12px 14px; border: 3px solid #000; border-radius: 0; background: #fff;
+    }
+    .badge{
+      font-size: 11px; font-weight: 900;
+      padding: 8px 12px; border-radius: 0;
+      border: 2px solid #000; color:#666; background:#fff;
+      text-transform:uppercase;
+    }
+    .badge.active{color:#fff; border-color: #000; background: #000;}
+    .badge.done{color:#000; border-color: #000; background: #fff;}
+
+    /* modal */
+    .modal{
+      position: fixed; inset:0;
+      background: rgba(0,0,0,.85);
+      backdrop-filter: none;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      z-index: 10000;
+    }
+    .modal.on{ display:flex; }
+    .modal-card{
+      width: min(560px, calc(100% - 28px));
+      background:#fff; border:4px solid #000; border-radius: 0;
+      box-shadow: 8px 8px 0 #fff;
+      overflow:visible;
+    }
+    .modal-head{
+      padding:16px 18px; border-bottom:4px solid #000;
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      background: #000;
+      color:#fff;
+    }
+    .modal-head strong{ font-size: 15px; font-weight: 900; text-transform:uppercase; }
+    .modal-body{ padding: 18px; }
+    .modal-body pre{
+      margin:0; white-space: pre-wrap; word-break: break-word;
+      font-size: 12px; line-height:1.6; color:#000;
+      background: #f5f5f5; border: 3px solid #000; border-radius: 0; padding: 14px;
+      font-family: ui-monospace, monospace;
+    }
+    .modal-actions{
+      padding: 16px 18px; border-top:4px solid #000;
+      display:flex; justify-content:flex-end; gap:12px;
+      background:#f5f5f5;
+    }
+
+    /* result panels */
+    .panel{
+      border:3px solid #000;
+      border-radius: 0;
+      padding: 16px;
+      background: #fff;
+    }
+    .panel h3{
+      margin:0 0 12px;
+      font-size:13px;
+      font-weight:900;
+      color: #000;
+      text-transform:uppercase;
+      letter-spacing:1px;
+    }
+
+    /* total trust card */
+    .trust-card{display:flex; flex-direction:column; gap:12px;}
+    .trust-head{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .trust-score{display:flex; flex-direction:column; gap:6px;}
+    .trust-value{font-size:32px; font-weight:900; letter-spacing:-1px;}
+    .trust-formula{font-size:10px; color:#666; font-weight:900; font-family:monospace; text-transform:uppercase;}
+    .trust-weights{font-size:10px; color:#666; font-weight:900; font-family:monospace;}
+    .trust-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+    .kv.sm{padding:12px; border-radius:0; border:2px solid #000; background:#f5f5f5;}
+    .kv.sm .k{font-size:10px; text-transform:uppercase;}
+    .kv.sm .v{font-size:16px; font-weight:900;}
+    .table{
+      width:100%;
+      border-collapse: collapse;
+      font-size:12px;
+    }
+    .table th,.table td{
+      border-bottom:2px solid #000;
+      padding:12px 10px;
+      text-align:left;
+      vertical-align:top;
+    }
+    .table thead tr{
+      background:#000;
+      color:#fff;
+    }
+    .table th{color:#fff; font-weight:900; text-transform:uppercase;}
+
+    .barrow{display:flex; flex-direction:column; gap:8px; padding:12px 0; border-bottom:2px solid #000;}
+    .barrow:last-child{border-bottom:none}
+    .barhead{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    .barlabel{font-size:12px; color:#000; font-weight:900; text-transform:uppercase;}
+    .barnum{font-size:13px; font-weight:900}
+    .bar{
+      height:14px; border-radius:0;
+      background:#fff; border:2px solid #000;
+      overflow:hidden;
+    }
+    .bar > div{
+      height:100%;
+      width:0%;
+      background: #000;
+    }
+    .reason{
+      font-size:12px; color:#666; font-weight:700; line-height:1.6;
+      font-family: ui-monospace, monospace;
+    }
+
+    .note{
+      font-size:12px; color:#666; font-weight:700; line-height:1.6;
+    }
+
+    canvas{max-width:100%;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="mark"></div>
+        <div class="brand-title">
+          <strong>JHD 이력서 평가 시스템</strong>
+          <span>GPT-4o • Claude Sonnet 4 • 교차 검증</span>
+        </div>
+      </div>
+
+      <nav class="tabs">
+        <div class="tab" data-nav="#/start">평가 시작</div>
+        <div class="tab" data-nav="#/result">평가 결과</div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- START -->
+    <section id="view-start" class="hidden">
+      <div class="hero">
+        <div class="hero-top">
+          <div class="hero-title">
+            <h1>JHD 이력서 평가 시스템</h1>
+            <p>5대 핵심 역량 기반 평가 • GPT + Claude 교차 검증 • AI 신뢰도 분석</p>
+          </div>
+          <div class="hero-actions">
+            <button class="btn" id="clearBtn" disabled>초기화</button>
+            <button class="btn primary" id="runBtn" disabled>평가 실행</button>
+          </div>
+        </div>
+
+        <div style="height:18px"></div>
+
+        <div class="grid">
+          <div>
+            <div id="dropzone" class="dropzone" tabindex="0">
+              <div class="row">
+                <input id="fileInput" class="file-input" type="file" accept=".txt,.pdf,.docx,.doc" />
+                <select id="jobRole" class="select">
+                  <option value="개발">개발 직무</option>
+                  <option value="인사">인사 직무</option>
+                  <option value="마케팅">마케팅 직무</option>
+                  <option value="영업">영업 직무</option>
+                  <option value="디자인">디자인 직무</option>
+                  <option value="기획">기획 직무</option>
+                </select>
+              </div>
+              <div class="note">이력서 파일(.txt, .pdf, .docx)을 업로드한 후 <b>평가 실행</b>을 누르세요. GPT와 Claude가 교차 검증합니다.</div>
+            </div>
+          </div>
+
+          <aside class="panel">
+            <h3>상태</h3>
+            <div class="kvs">
+              <div class="kv">
+                <div class="k">서버</div>
+                <div class="v" id="kvServer">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">파일</div>
+                <div class="v" id="kvFile">-</div>
+              </div>
+              <div class="kv">
+                <div class="k">문서 유형</div>
+                <div class="v">이력서</div>
+              </div>
+              <div class="kv">
+                <div class="k">직무 기준</div>
+                <div class="v" id="kvRole">-</div>
+              </div>
+            </div>
+            <div class="progress"><div id="progressBar"></div></div>
+            <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap;">
+              <span class="pill"><span class="dot"></span>5대 역량</span>
+              <span class="pill"><span class="dot"></span>AI 교차검증</span>
+              <span class="pill"><span class="dot"></span>PDF 결과지</span>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="view-result" class="card hidden">
+      <div id="result-root">
+      <div class="card-header">
+        <h2>평가 결과</h2>
+        <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+          <button class="btn" id="backStart">새 평가</button>
+          <button class="btn" id="downloadPdf" disabled>PDF 다운로드</button>
+        </div>
+      </div>
+
+      <div class="card-body grid">
+        <!-- LEFT -->
+        <div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+            <div>
+              <div class="k" style="font-weight:900;">판정</div>
+              <div class="v" id="rDecision">-</div>
+            </div>
+            <span class="pill" id="rStatus"><span class="dot"></span><span id="rStatusText">-</span></span>
+          </div>
+
+          <div style="height:16px"></div>
+
+          <div class="kvs">
+            <div class="kv">
+              <div class="k">신뢰도</div>
+              <div class="v" id="rConf">-</div>
+            </div>
+            <div class="kv">
+              <div class="k">정책</div>
+              <div class="v" id="rPolicy">-</div>
+            </div>
+            <div class="kv">
+              <div class="k">엔진</div>
+              <div class="v" id="rModel">-</div>
+            </div>
+            <div class="kv">
+              <div class="k">평가 시각</div>
+              <div class="v" id="rTime">-</div>
+            </div>
+          </div>
+
+          <div style="height:16px"></div>
+          <div class="box" id="rFindings">-</div>
+
+          <div style="height:16px"></div>
+
+          <!-- 신뢰성 지표 -->
+          <div class="panel" id="relCard">
+            <h3>신뢰성 지표 (교차 검증)</h3>
+            <div id="relBars"></div>
+            <div class="note"></div>
+          </div>
+        </div>
+
+        <!-- RIGHT -->
+        <div>
+          <div class="panel">
+            <h3>5대 역량 평가</h3>
+            <canvas id="radar" width="420" height="360"></canvas>
+            <div class="note" id="baselineNote" style="margin-top:10px;">-</div>
+          </div>
+
+          <div style="height:16px"></div>
+
+      <div class="panel">
+        <h3>평가 항목 상세</h3>
+        <table class="table" id="axesTable">
+          <thead><tr><th>항목</th><th style="width:90px">점수</th><th>근거</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div style="height:16px"></div>
+
+      <div class="panel" id="totalTrustPanel">
+        <h3>Total Trust</h3>
+        <div class="trust-card">
+          <div class="trust-head">
+            <div class="trust-score">
+              <div class="trust-value" id="trustValue">-</div>
+              <div class="trust-formula">TotalTrust = (w1·EDA + w2·ES + w3·HA) × (1 - BRS)</div>
+            </div>
+            <span class="pill" id="trustBadge"><span class="dot"></span><span id="trustBadgeText">-</span></span>
+          </div>
+          <div class="trust-grid">
+            <div class="kv sm">
+              <div class="k">EDA (근거정합성)</div>
+              <div class="v" id="trustEDA">-</div>
+            </div>
+            <div class="kv sm">
+              <div class="k">ES (안정성)</div>
+              <div class="v" id="trustES">-</div>
+            </div>
+            <div class="kv sm">
+              <div class="k">HA (강건성)</div>
+              <div class="v" id="trustHA">-</div>
+            </div>
+            <div class="kv sm">
+              <div class="k">BRS (편향위험)</div>
+              <div class="v" id="trustBRS">-</div>
+            </div>
+          </div>
+          <div class="trust-weights" id="trustWeights">-</div>
+        </div>
+      </div>
+    </div>
+  </div>
+          </div>
+  </section>
+  </main>
+</div>
+
+<!-- 진행 오버레이 -->
+<div class="progress-overlay" id="progressOverlay">
+  <div class="progress-card">
+    <div class="progress-head">
+      <div class="spinner"></div>
+      <div class="progress-title">
+        <strong id="progressMain">AI 평가를 진행하고 있습니다</strong><br/>
+        <span id="progressSub">GPT-4o와 Claude Sonnet 4가 분석 중입니다...</span>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div><b>1) 파일 업로드</b><div class="note">이력서를 서버로 전송합니다</div></div>
+        <span class="badge" id="stUpload">대기</span>
+      </div>
+      <div class="step">
+        <div><b>2) 텍스트 추출</b><div class="note">이력서에서 텍스트를 추출합니다</div></div>
+        <span class="badge" id="stExtract">대기</span>
+      </div>
+      <div class="step">
+        <div><b>3) GPT 평가</b><div class="note">5대 역량을 평가하고 근거를 추출합니다</div></div>
+        <span class="badge" id="stAI">대기</span>
+      </div>
+      <div class="step">
+        <div><b>4) Claude 검증</b><div class="note">신뢰도를 검증하고 교차 분석합니다</div></div>
+        <span class="badge" id="stReport">대기</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 오류 모달 -->
+<div class="modal" id="errorModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <strong>오류가 발생했습니다</strong>
+      <button class="btn" id="errCloseTop">닫기</button>
+    </div>
+    <div class="modal-body">
+      <pre id="errText">-</pre>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" id="errClose">확인</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ===== 설정 =====
+  const SYSTEM_NAME = "JHD 이력서 평가 시스템";
+  const API_BASE    = "http://127.0.0.1:5001";
+  const TRUST_WEIGHTS = { w1: 0.34, w2: 0.33, w3: 0.33 };
+
+  // Router
+  const views = {
+    start: document.getElementById('view-start'),
+    result: document.getElementById('view-result'),
+  };
+  function setActiveTab(hash){
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.nav === hash));
+  }
+  function showView(name){
+    Object.values(views).forEach(v => v.classList.add('hidden'));
+    views[name].classList.remove('hidden');
+    setActiveTab(`#/` + name);
+  }
+  function route(){
+    const hash = location.hash || '#/start';
+    const page = hash.replace('#/','');
+    if(!views[page]) { location.hash = '#/start'; return; }
+    showView(page);
+  }
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => location.hash = t.dataset.nav));
+  window.addEventListener('hashchange', route);
+
+  // Upload
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const jobRoleSel = document.getElementById('jobRole');
+  const runBtn = document.getElementById('runBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const progressBar = document.getElementById('progressBar');
+
+  const kvServer = document.getElementById('kvServer');
+  const kvFile = document.getElementById('kvFile');
+  const kvRole = document.getElementById('kvRole');
+
+  let selectedFile = null;
+  let lastResult = null;
+
+  function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+  async function ping(){
+    try{
+      const r = await fetch(`${API_BASE}/health`);
+      kvServer.textContent = r.ok ? "정상" : "비정상";
+    } catch {
+      kvServer.textContent = "연결 실패";
+    }
+  }
+
+  function setFile(file){
+    selectedFile = file;
+    if(!file){
+      runBtn.disabled = true;
+      clearBtn.disabled = true;
+      kvFile.textContent = "-";
+      return;
+    }
+    kvFile.textContent = file.name;
+    kvRole.textContent = jobRoleSel.value;
+    runBtn.disabled = false;
+    clearBtn.disabled = false;
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if(f) setFile(f);
+  });
+  jobRoleSel.addEventListener('change', () => kvRole.textContent = jobRoleSel.value);
+
+  clearBtn.addEventListener('click', () => {
+    selectedFile = null;
+    fileInput.value = '';
+    setFile(null);
+    progressBar.style.width = '0%';
+  });
+
+  // DnD
+  ['dragenter','dragover'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.add('drag');
+    });
+  });
+  ['dragleave','drop'].forEach(evt => {
+    dropzone.addEventListener(evt, (e) => {
+      e.preventDefault(); e.stopPropagation();
+      dropzone.classList.remove('drag');
+    });
+  });
+  dropzone.addEventListener('drop', (e) => {
+    const f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if(f) setFile(f);
+  });
+
+  // Overlay / Modal
+  const overlay = document.getElementById('progressOverlay');
+  const stUpload = document.getElementById('stUpload');
+  const stExtract = document.getElementById('stExtract');
+  const stAI = document.getElementById('stAI');
+  const stReport = document.getElementById('stReport');
+  const progressSub = document.getElementById('progressSub');
+
+  const errorModal = document.getElementById('errorModal');
+  const errText = document.getElementById('errText');
+  function showError(msg){
+    errText.textContent = msg || "알 수 없는 오류";
+    errorModal.classList.add('on');
+  }
+  function hideError(){ errorModal.classList.remove('on'); }
+  document.getElementById('errClose').addEventListener('click', hideError);
+  document.getElementById('errCloseTop').addEventListener('click', hideError);
+  errorModal.addEventListener('click', (e)=>{ if(e.target === errorModal) hideError(); });
+
+  function resetStages(){
+    [stUpload, stExtract, stAI, stReport].forEach(b=>{
+      b.classList.remove('active','done');
+      b.textContent = "대기";
+    });
+  }
+  function setStage(el, state){
+    el.classList.remove('active','done');
+    if(state === 'active'){ el.classList.add('active'); el.textContent = "진행 중"; }
+    if(state === 'done'){ el.classList.add('done'); el.textContent = "완료"; }
+  }
+  function showProgress(){
+    resetStages();
+    overlay.classList.add('on');
+  }
+  function hideProgress(){ overlay.classList.remove('on'); }
+
+  // ===== 서버 호출 =====
+  async function analyzeFile(file, jobRole){
+    const form = new FormData();
+    form.append('file', file);
+    form.append('doc_type', '이력서');
+    form.append('job_role', jobRole);
+
+    const res = await fetch(`${API_BASE}/api/review`, { method:'POST', body: form });
+    const ct = res.headers.get('content-type') || '';
+    const txt = await res.text();
+    if(!res.ok) throw new Error(txt || `HTTP ${res.status}`);
+    if(!ct.includes('application/json')) throw new Error('서버 응답이 JSON이 아닙니다:\n' + txt);
+
+    const data = JSON.parse(txt);
+    if(!data.meta || !data.result || !data.scoring) throw new Error('서버 응답 형식이 올바르지 않습니다.\n' + txt);
+    return data;
+  }
+  async function postPdf(payload){
+    const form = new FormData();
+    form.append('payload_json', JSON.stringify(payload));
+    const res = await fetch(`${API_BASE}/api/report/pdf`, { method:'POST', body: form });
+    if(!res.ok) throw new Error(await res.text());
+    return await res.blob();
+  }
+
+  async function fakeProgressLong(){
+    const total = 2000 + Math.floor(Math.random()*2000);
+    const t0 = performance.now();
+
+    progressBar.style.width = '5%';
+    await sleep(150);
+
+    while(performance.now() - t0 < total * 0.35){
+      const p = 5 + ((performance.now()-t0)/(total*0.35))*30;
+      progressBar.style.width = `${Math.min(35, p)}%`;
+      await sleep(120);
+    }
+    while(performance.now() - t0 < total * 0.80){
+      const p = 35 + ((performance.now()-t0 - total*0.35)/(total*0.45))*45;
+      progressBar.style.width = `${Math.min(80, p)}%`;
+      await sleep(140);
+    }
+    progressBar.style.width = '95%';
+    await sleep(250);
+  }
+
+  // ===== 결과 렌더링 =====
+  const rDecision = document.getElementById('rDecision');
+  const rConf = document.getElementById('rConf');
+  const rPolicy = document.getElementById('rPolicy');
+  const rModel = document.getElementById('rModel');
+  const rTime = document.getElementById('rTime');
+  const rFindings = document.getElementById('rFindings');
+  const rStatus = document.getElementById('rStatus');
+  const rStatusText = document.getElementById('rStatusText');
+  const trustValue = document.getElementById('trustValue');
+  const trustWeights = document.getElementById('trustWeights');
+  const trustBadge = document.getElementById('trustBadge');
+  const trustBadgeText = document.getElementById('trustBadgeText');
+  const trustEDA = document.getElementById('trustEDA');
+  const trustES = document.getElementById('trustES');
+  const trustHA = document.getElementById('trustHA');
+  const trustBRS = document.getElementById('trustBRS');
+
+  function setStatusPill(st){
+    rStatus.classList.remove('ok','warn','bad');
+    if(st === 'ok'){ rStatus.classList.add('ok'); rStatusText.textContent = '우수'; return; }
+    if(st === 'warn'){ rStatus.classList.add('warn'); rStatusText.textContent = '보통'; return; }
+    rStatus.classList.add('bad'); rStatusText.textContent = '미흡';
+  }
+
+  function setTrustBadge(score){
+    trustBadge.classList.remove('ok','warn','bad');
+    if(score >= 85){ trustBadge.classList.add('ok'); trustBadgeText.textContent = 'High'; return; }
+    if(score >= 70){ trustBadge.classList.add('warn'); trustBadgeText.textContent = 'Medium'; return; }
+    trustBadge.classList.add('bad'); trustBadgeText.textContent = 'Low';
+  }
+
+  // Radar (Canvas) - 5개 축
+  const radarCanvas = document.getElementById('radar');
+  const rctx = radarCanvas.getContext('2d');
+
+  function drawRadar(labels, applicantVals, avgVals, baseline=60, max=100){
+    const w = radarCanvas.width, h = radarCanvas.height;
+    rctx.clearRect(0,0,w,h);
+
+    const cx = w*0.50, cy = h*0.52;
+    const R = Math.min(w,h)*0.33;
+    const n = labels.length;
+
+    // grid
+    rctx.strokeStyle = "rgba(0,0,0,0.15)";
+    rctx.lineWidth = 2;
+    const levels = [20,40,60,80,100];
+    for(let lvl of levels){
+      const r = R*(lvl/max);
+      rctx.beginPath();
+      for(let i=0;i<n;i++){
+        const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+        const x = cx + r*Math.cos(ang);
+        const y = cy + r*Math.sin(ang);
+        if(i===0) rctx.moveTo(x,y); else rctx.lineTo(x,y);
+      }
+      rctx.closePath();
+      rctx.stroke();
+    }
+
+    // axes
+    rctx.strokeStyle = "rgba(0,0,0,0.2)";
+    for(let i=0;i<n;i++){
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      rctx.beginPath();
+      rctx.moveTo(cx,cy);
+      rctx.lineTo(cx + R*Math.cos(ang), cy + R*Math.sin(ang));
+      rctx.stroke();
+    }
+
+    // baseline (60)
+    const br = R*(baseline/max);
+    rctx.setLineDash([8,6]);
+    rctx.strokeStyle = "rgba(0,0,0,0.4)";
+    rctx.lineWidth = 2;
+    rctx.beginPath();
+    for(let i=0;i<n;i++){
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      const x = cx + br*Math.cos(ang);
+      const y = cy + br*Math.sin(ang);
+      if(i===0) rctx.moveTo(x,y); else rctx.lineTo(x,y);
+    }
+    rctx.closePath();
+    rctx.stroke();
+    rctx.setLineDash([]);
+
+    // avg polygon (dashed)
+    rctx.setLineDash([8,6]);
+    rctx.strokeStyle = "rgba(0,0,0,0.5)";
+    rctx.lineWidth = 2;
+    rctx.beginPath();
+    for(let i=0;i<n;i++){
+      const v = Math.max(0, Math.min(max, avgVals[i]));
+      const r = R*(v/max);
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      const x = cx + r*Math.cos(ang);
+      const y = cy + r*Math.sin(ang);
+      if(i===0) rctx.moveTo(x,y); else rctx.lineTo(x,y);
+    }
+    rctx.closePath();
+    rctx.stroke();
+    rctx.setLineDash([]);
+
+    // applicant polygon
+    rctx.strokeStyle = "#000";
+    rctx.lineWidth = 3;
+    rctx.fillStyle = "rgba(0,0,0,0.08)";
+    rctx.beginPath();
+    for(let i=0;i<n;i++){
+      const v = Math.max(0, Math.min(max, applicantVals[i]));
+      const r = R*(v/max);
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      const x = cx + r*Math.cos(ang);
+      const y = cy + r*Math.sin(ang);
+      if(i===0) rctx.moveTo(x,y); else rctx.lineTo(x,y);
+    }
+    rctx.closePath();
+    rctx.fill();
+    rctx.stroke();
+
+    // labels
+    rctx.fillStyle = "#000";
+    rctx.font = "900 13px 'Noto Sans KR', system-ui";
+    for(let i=0;i<n;i++){
+      const ang = (Math.PI*2)*(i/n) - Math.PI/2;
+      const x = cx + (R+32)*Math.cos(ang);
+      const y = cy + (R+32)*Math.sin(ang);
+      rctx.textAlign = "center";
+      rctx.textBaseline = "middle";
+      rctx.fillText(labels[i], x, y);
+    }
+
+    // legend
+    rctx.font = "900 13px 'Noto Sans KR', system-ui";
+    rctx.fillStyle = "#000";
+    rctx.fillText("■ 지원자", 20, 20);
+    rctx.fillStyle = "rgba(0,0,0,0.6)";
+    rctx.fillText("■ 기준선", 100, 20);
+  }
+
+  function renderTables(payload){
+    const scoring = payload.scoring || {};
+    const axes = scoring.axesScore || {};
+    const rel  = scoring.reliabilityScore || {};
+    const axisReasons = scoring.axisReasons || {};
+    const relReasons  = scoring.reliabilityReasons || {};
+    const baseline = scoring.baselineScore || 60;
+    const bench = scoring.benchmark || {};
+    const axesAvg = (bench.axesAvgScore || {});
+    
+    // 5개 축
+    const keys = ["창의성","의사소통","전문지식","인성","열정"];
+    const applicantVals = keys.map(k => Number(axes[k] ?? 0));
+    const avgVals = keys.map(k => Number(axesAvg[k] ?? 60));
+
+    drawRadar(keys, applicantVals, avgVals, baseline, 100);
+
+    // axes table
+    const tbody = document.querySelector("#axesTable tbody");
+    tbody.innerHTML = "";
+    keys.forEach(k=>{
+      const tr = document.createElement("tr");
+      const td1 = document.createElement("td"); td1.textContent = k;
+      const td2 = document.createElement("td"); td2.textContent = `${Number(axes[k] ?? 0).toFixed(1)}점`;
+      const td3 = document.createElement("td"); td3.textContent = axisReasons[k] || "-";
+      tr.appendChild(td1); tr.appendChild(td2); tr.appendChild(td3);
+      tbody.appendChild(tr);
+    });
+
+    // reliability bars
+    const relWrap = document.getElementById("relBars");
+    relWrap.innerHTML = "";
+    const relItems = ["근거정합성","안정성","강건성","편향위험"];
+    relItems.forEach(k=>{
+      const score = Number(rel[k] ?? 0);
+      const reason = relReasons[k] || "-";
+      const row = document.createElement("div");
+      row.className = "barrow";
+      row.innerHTML = `
+        <div class="barhead">
+          <div class="barlabel">${k}</div>
+          <div class="barnum">${score.toFixed(1)}점</div>
+        </div>
+        <div class="bar"><div style="width:${Math.max(0,Math.min(100,score))}%;"></div></div>
+        <div class="reason">${reason}</div>
+      `;
+      relWrap.appendChild(row);
+    });
+
+    renderTotalTrust(scoring);
+  }
+
+  function calcTotalTrust(rel, weights=TRUST_WEIGHTS){
+    const EDA = Number(rel["근거정합성"] ?? 0);
+    const ES  = Number(rel["안정성"] ?? 0);
+    const HA  = Number(rel["강건성"] ?? 0);
+    const BRS = Number(rel["편향위험"] ?? 0);
+
+    const weighted = (weights.w1 || 0)*EDA + (weights.w2 || 0)*ES + (weights.w3 || 0)*HA;
+    const total = ((weighted/100) * (1 - BRS/100)) * 100;
+
+    return {
+      total: Math.max(0, Math.min(100, total)),
+      EDA, ES, HA, BRS
+    };
+  }
+
+  function renderTotalTrust(scoring){
+    const rel = scoring.reliabilityScore || {};
+    const weights = (scoring.totalTrust && scoring.totalTrust.weights) || scoring.trustWeights || TRUST_WEIGHTS;
+    const calcRes = calcTotalTrust(rel, weights);
+    const total = (scoring.totalTrust && typeof scoring.totalTrust.value === 'number')
+      ? scoring.totalTrust.value
+      : calcRes.total;
+
+    trustValue.textContent = `${total.toFixed(1)}점`;
+    setTrustBadge(total);
+    trustEDA.textContent = `${calcRes.EDA.toFixed(1)}점`;
+    trustES.textContent = `${calcRes.ES.toFixed(1)}점`;
+    trustHA.textContent = `${calcRes.HA.toFixed(1)}점`;
+    trustBRS.textContent = `${calcRes.BRS.toFixed(1)}점`;
+    trustWeights.textContent = `w1=${(weights.w1||0).toFixed(2)}, w2=${(weights.w2||0).toFixed(2)}, w3=${(weights.w3||0).toFixed(2)}`;
+  }
+
+  function renderResult(payload){
+    lastResult = payload;
+
+    const meta = payload.meta || {};
+    const r = payload.result || {};
+
+    rDecision.textContent = r.decision ?? '-';
+    rConf.textContent = (typeof r.confidence === 'number') ? `${Math.round(r.confidence*100)}%` : '-';
+    rPolicy.textContent = meta.policy ?? '-';
+    rModel.textContent = meta.model ?? '-';
+    rTime.textContent = meta.analyzedAt || '-';
+
+    rFindings.textContent = r.findings ?? '-';
+    setStatusPill(r.status || 'warn');
+
+    renderTables(payload);
+
+    document.getElementById("downloadPdf").disabled = false;
+  }
+
+  document.getElementById('downloadPdf').addEventListener('click', async () => {
+    if(!lastResult) return;
+    try{
+      const blob = await postPdf(lastResult);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `JHD_평가결과_${lastResult.meta?.caseId || "CASE"}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e){
+      showError((e && e.message) ? e.message : String(e));
+    }
+  });
+
+  document.getElementById('backStart').addEventListener('click', ()=> location.hash = '#/start');
+
+  // 실행
+  runBtn.addEventListener('click', async () => {
+    if(!selectedFile) return;
+
+    runBtn.disabled = true;
+    clearBtn.disabled = true;
+
+    showProgress();
+    setStage(stUpload,'active');
+    progressSub.textContent = "이력서 파일을 업로드하고 있습니다.";
+
+    const t1 = setTimeout(()=>{ setStage(stUpload,'done'); setStage(stExtract,'active'); progressSub.textContent="텍스트를 추출하고 있습니다."; }, 700);
+    const t2 = setTimeout(()=>{ setStage(stExtract,'done'); setStage(stAI,'active'); progressSub.textContent="GPT-4o가 5대 역량을 평가하고 있습니다."; }, 1400);
+    const t3 = setTimeout(()=>{ setStage(stAI,'done'); setStage(stReport,'active'); progressSub.textContent="Claude Sonnet 4가 교차 검증하고 있습니다."; }, 2200);
+
+    try{
+      const longProgress = fakeProgressLong();
+      const payload = await analyzeFile(selectedFile, jobRoleSel.value);
+      await longProgress;
+
+      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3);
+      setStage(stUpload,'done');
+      setStage(stExtract,'done');
+      setStage(stAI,'done');
+      setStage(stReport,'done');
+      progressBar.style.width = "100%";
+
+      renderResult(payload);
+      hideProgress();
+      location.hash = '#/result';
+
+    } catch (e){
+      hideProgress();
+      showError((e && e.message) ? e.message : String(e));
+    } finally {
+      runBtn.disabled = !selectedFile;
+      clearBtn.disabled = !selectedFile;
+    }
+  });
+
+  // init
+  route();
+  ping();
+  kvRole.textContent = jobRoleSel.value;
+</script>
+</body>
+</html>
