@@ -1015,7 +1015,8 @@
     const EDA = Number(rel["근거정합성"] ?? 0);
     const ES  = Number(rel["안정성"] ?? 0);
     const HA  = Number(rel["강건성"] ?? 0);
-    const BRS = Number(rel["편향위험"] ?? 0);
+    // 서버의 편향위험 값은 높을수록 안전한 점수(100 - 위험도)라서 위험도로 되돌림
+    const BRS = 100 - Number(rel["편향위험"] ?? 100);
 
     const weighted = (weights.w1 || 0)*EDA + (weights.w2 || 0)*ES + (weights.w3 || 0)*HA;
     const total = ((weighted/100) * (1 - BRS/100)) * 100;
