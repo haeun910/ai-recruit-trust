@@ -271,7 +271,6 @@ def review():
         print(traceback.format_exc(), file=sys.stderr)
         return jsonify({
             "error": error_msg,
-            "trace": traceback.format_exc()
         }), 500
 
 
@@ -469,7 +468,6 @@ def generate_pdf():
         print(traceback.format_exc(), file=sys.stderr)
         return jsonify({
             "error": error_msg,
-            "trace": traceback.format_exc()
         }), 500
 
 if __name__ == "__main__":
